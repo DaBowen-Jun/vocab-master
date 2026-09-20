@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@layer base {
+  body {
+    @apply font-sans;
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 110% -10%, #ffe9c7 0%, transparent 55%),
+      radial-gradient(1000px 500px at -10% 0%, #dbe7ff 0%, transparent 50%),
+      linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%);
+    color: #1f2430;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 2px solid #3366ff;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 999px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white shadow-soft border border-slate-100;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 cursor-pointer;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+  }
+  .btn-ghost {
+    @apply btn bg-brand-50 text-brand-700 hover:bg-brand-100;
+  }
+}

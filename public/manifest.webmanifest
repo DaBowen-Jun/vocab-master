@@ -1,0 +1,19 @@
+{
+  "name": "词力星球 · 背单词闯关",
+  "short_name": "词力星球",
+  "description": "面向小学 / 初中 / 高中三学段的背单词记录 App：跟读、拼写、中英考试、打卡激励与熟练度追踪。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f8ff",
+  "theme_color": "#3366ff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+node_modules
+dist
+dist-server
+dist-ssr
+*.local
+.DS_Store
+
+# CodeBuddy 内部目录（非项目源码）
+.codebuddy
+
+# 本地开发 / 构建日志
+build_out.txt
+dev.err
+dev.log
+dev2.err
+dev2.log
+ds_out.txt
+g1_gen.err
+g1_gen.log
+*.tmp
+
+# 生词语料（构建输入，非运行时所需，体积大；词表已编译进 src/data）
+scripts/raw/
