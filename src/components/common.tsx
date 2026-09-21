@@ -110,7 +110,6 @@ export function StageSwitch({ value, onChange }: { value: Stage | 'all'; onChang
     { k: 'primary', l: '小学' },
     { k: 'junior', l: '中学' },
     { k: 'senior', l: '高中' },
-    { k: 'college', l: '大学' },
   ]
   return (
     <div className="flex flex-wrap gap-2">

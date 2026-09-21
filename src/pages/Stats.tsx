@@ -37,7 +37,7 @@ export function Stats() {
     const counts: Record<string, number> = { 未掌握: 0, 熟悉: 0, 掌握: 0 }
     profs.forEach((v) => (counts[bucket(v)] += 1))
 
-    const stages: Stage[] = ['primary', 'junior', 'senior', 'college']
+    const stages: Stage[] = ['primary', 'junior', 'senior']
     const allStage = stages.map((s) => {
       const ws = WORDS.filter((w) => w.stage === s)
       const m = ws.filter((w) => store.proficiencyOf(w.id) >= 80).length
@@ -87,7 +87,7 @@ export function Stats() {
     series: [{ type: 'bar', data: checkinSeries.values, itemStyle: { color: '#3366ff', borderRadius: [4, 4, 0, 0] }, barWidth: '55%' }],
   }
 
-  const stageLabel: Record<Stage, string> = { primary: '小学', junior: '中学', senior: '高中', college: '大学' }
+  const stageLabel: Record<Stage, string> = { primary: '小学', junior: '中学', senior: '高中' }
   const stageOption: any = {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { bottom: 0 },

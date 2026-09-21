@@ -3,18 +3,16 @@ import { WORD_FREQUENCY } from './frequency'
 import { PRIMARY } from './wordsPrimary'
 import { JUNIOR } from './wordsJunior'
 import { SENIOR } from './wordsSenior'
-import { COLLEGE } from './wordsCollege'
 
-// 汇总 4 学段词库（小学 / 中学 / 高中 / 大学）
-const RAW: Omit<Word, 'freq'>[] = [...PRIMARY, ...JUNIOR, ...SENIOR, ...COLLEGE]
+// 汇总 3 学段词库（小学 / 初中 / 高中）。大学（college）已按需求移除。
+const RAW: Omit<Word, 'freq'>[] = [...PRIMARY, ...JUNIOR, ...SENIOR]
 
-// 学段基础排序值：保证 primary < junior < senior < college，
+// 学段基础排序值：保证 primary < junior < senior，
 // 学段内优先按真实词频排序，未收录于词频源的词统一排在学段末尾。
 const STAGE_FREQ_BASE: Record<Stage, number> = {
   primary: 0,
   junior: 10_000_000,
   senior: 20_000_000,
-  college: 30_000_000,
 }
 
 // 同一个单词可能同时被多个学段收录（当前一级 / 二级存在 218 个重叠词）。

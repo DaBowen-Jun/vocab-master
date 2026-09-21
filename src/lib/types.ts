@@ -1,8 +1,8 @@
 // 全局类型定义
 
-// 学段按「小学 / 中学（初中）/ 高中 / 大学」四个阶段划分：
-//   小学 = 原一级 + 二级；中学 = 原三级（初中）；高中 = 原必修 + 选必 + 选修；大学 = 四六级/考研层级
-export type Stage = 'primary' | 'junior' | 'senior' | 'college'
+// 学段按「小学 / 中学（初中）/ 高中」三个阶段划分：
+//   小学 = 原一级 + 二级；中学 = 原三级（初中）；高中 = 原必修 + 选必 + 选修
+export type Stage = 'primary' | 'junior' | 'senior'
 
 // target = 该阶段对应的「累计词汇量要求」（课标口径，越小越基础）
 export const STAGE_META: Record<
@@ -12,11 +12,10 @@ export const STAGE_META: Record<
   primary: { label: '小学', full: '小学 · 一~六年级', short: '小', color: '#22c55e', target: 800, order: 1 },
   junior: { label: '中学', full: '初中 · 七~九年级', short: '中', color: '#f59e0b', target: 1600, order: 2 },
   senior: { label: '高中', full: '高中 · 必修+选必+选修', short: '高', color: '#6366f1', target: 3500, order: 3 },
-  college: { label: '大学', full: '大学 · 四六级/考研', short: '大', color: '#8b5cf6', target: 6000, order: 4 },
 }
 
 // 按学习顺序的学段列表
-export const STAGE_ORDER: Stage[] = ['primary', 'junior', 'senior', 'college']
+export const STAGE_ORDER: Stage[] = ['primary', 'junior', 'senior']
 
 export interface Example {
   en: string

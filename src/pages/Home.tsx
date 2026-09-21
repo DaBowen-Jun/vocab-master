@@ -28,7 +28,7 @@ function lastNDays(n: number): string[] {
   return arr
 }
 
-const STAGE_LIST: Stage[] = ['primary', 'junior', 'senior', 'college']
+const STAGE_LIST: Stage[] = ['primary', 'junior', 'senior']
 
 export function Home({ onNavigate }: { onNavigate: (v: string) => void }) {
   const p = useProgress()
