@@ -1,8 +1,10 @@
 import type { Word, Stage } from '../lib/types'
+import { STAGE_ORDER } from '../lib/types'
 import { WORD_FREQUENCY } from './frequency'
 import { PRIMARY } from './wordsPrimary'
 import { JUNIOR } from './wordsJunior'
 import { SENIOR } from './wordsSenior'
+import { UNIT_ORDER } from './unitOrder'
 
 // 汇总 3 学段词库（小学 / 初中 / 高中）。大学（college）已按需求移除。
 const RAW: Omit<Word, 'freq'>[] = [...PRIMARY, ...JUNIOR, ...SENIOR]
@@ -42,4 +44,23 @@ export const WORD_MAP: Record<string, Word> = Object.fromEntries(WORDS.map((w) =
 
 export function wordsByStage(stage: Stage): Word[] {
   return WORDS.filter((w) => w.stage === stage).sort((a, b) => a.freq - b.freq)
+}
+
+/**
+ * 按教材单元顺序（unit1,2,3…）返回某学段的背诵词表。
+ * 匹配到单元的词按「册次/年级升序 → 单元升序」排列；
+ * 未匹配到单元的词（现有收录词但单元表有遗漏）原样保留在学段末尾，绝不丢弃。
+ */
+export function recitationWordsByStage(stage: Stage): Word[] {
+  const map = UNIT_ORDER[stage]
+  const stageWords = WORDS.filter((w) => w.stage === stage)
+  return stageWords
+    .map((w, i) => ({ w, i, info: map[w.term.toLowerCase()] }))
+    .sort((a, b) => {
+      const ka = a.info ? a.info.key : Number.MAX_SAFE_INTEGER
+      const kb = b.info ? b.info.key : Number.MAX_SAFE_INTEGER
+      if (ka !== kb) return ka - kb
+      return a.i - b.i // 未匹配词维持原数组（词频）相对顺序
+    })
+    .map((x) => x.w)
 }

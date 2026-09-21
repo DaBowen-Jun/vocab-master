@@ -5,15 +5,20 @@ import { recognitionSupported, recognize, speak, ttsSupported } from '../lib/spe
 import { StageSwitch, StageTag as StageTagInline } from '../components/common'
 import { micOutlined, soundOutlined, HeadphonesIcon, PenIcon } from '../components/icons'
 import { useStage } from '../lib/stageContext'
+import { unitLabelOf } from '../data/unitOrder'
 import type { Word } from '../lib/types'
 
 type Mode = 'follow' | 'spell'
 
 export function Learn() {
   const [mode, setMode] = useState<Mode>('follow')
+  const [order, setOrder] = useState<'unit' | 'weak'>('unit') // 教材单元顺序 / 薄弱优先
   const [spellBySound, setSpellBySound] = useState(true) // true=听音拼写 false=看义拼写
   const { stage, setStage } = useStage()
-  const list = useMemo<Word[]>(() => store.weakFirst(stage), [stage])
+  const list = useMemo<Word[]>(
+    () => (order === 'unit' ? store.unitOrder(stage) : store.weakFirst(stage)),
+    [stage, order],
+  )
   const [idx, setIdx] = useState(0)
   const [startedAt, setStartedAt] = useState(Date.now())
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null)
@@ -34,7 +39,7 @@ export function Learn() {
 
   useEffect(() => {
     setIdx(0)
-  }, [stage, mode])
+  }, [stage, mode, order])
 
   useEffect(() => {
     setStartedAt(Date.now())
@@ -109,12 +114,27 @@ export function Learn() {
         </button>
       </div>
 
+      {/* 背诵顺序：教材单元顺序 / 薄弱优先 */}
+      <div className="flex gap-2">
+        <button className={`btn flex-1 ${order === 'unit' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setOrder('unit')}>
+          教材单元顺序
+        </button>
+        <button className={`btn flex-1 ${order === 'weak' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setOrder('weak')}>
+          薄弱优先
+        </button>
+      </div>
+
       {/* 卡片 */}
       <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <StageTagInline stage={word.stage} />
-          </div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <StageTagInline stage={word.stage} />
+              {order === 'unit' && unitLabelOf(word.stage, word.term) && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-600">
+                  {unitLabelOf(word.stage, word.term)}
+                </span>
+              )}
+            </div>
           <span className="text-xs text-slate-400">
             {idx + 1}/{list.length} · 熟练度 {store.proficiencyOf(word.id)}%
           </span>

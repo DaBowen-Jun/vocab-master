@@ -1,7 +1,8 @@
 import type { Mastery, Milestone, UserProgress, Word } from './types'
 import type { StageFilter } from './stageContext'
+import { STAGE_ORDER } from './types'
 import { MILESTONES, TITLES } from '../data/milestones'
-import { WORDS } from '../data/words'
+import { WORDS, recitationWordsByStage } from '../data/words'
 
 const STORAGE_KEY = 'vocab-master-progress-v1'
 
@@ -171,6 +172,12 @@ export const store = {
   freqFirst(stage: StageFilter = 'all'): Word[] {
     const list = stage === 'all' ? WORDS : WORDS.filter((w) => w.stage === stage)
     return [...list].sort((a, b) => a.freq - b.freq)
+  },
+
+  /** 按教材单元顺序（unit1,2,3…）排序，用于背诵；未匹配单元的词排在学段末尾 */
+  unitOrder(stage: StageFilter = 'all'): Word[] {
+    if (stage === 'all') return STAGE_ORDER.flatMap((s) => recitationWordsByStage(s))
+    return recitationWordsByStage(stage)
   },
 
   masteredCount(): number {
