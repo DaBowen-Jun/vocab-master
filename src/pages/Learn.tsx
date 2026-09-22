@@ -61,6 +61,14 @@ export function Learn() {
     setIdx(nextIdx)
   }
 
+  const prev = () => {
+    const prevIdx = (idx - 1 + list.length) % list.length
+    if (autoSpeak && (mode === 'follow' || spellBySound) && ttsSupported()) {
+      speak(list[prevIdx].term)
+    }
+    setIdx(prevIdx)
+  }
+
   const startFollow = async () => {
     if (!recognitionSupported()) {
       setFeedback({ ok: false, text: '当前浏览器不支持语音识别，请用 Chrome / Edge 体验跟读评分。' })
@@ -214,6 +222,9 @@ export function Learn() {
           />
           自动发音
         </label>
+        <button className="btn-ghost flex-1" onClick={prev} disabled={list.length <= 1}>
+          ← 上一个
+        </button>
         <button className="btn-ghost flex-1" onClick={next}>
           下一个 →
         </button>
