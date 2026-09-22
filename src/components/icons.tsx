@@ -220,6 +220,29 @@ export function soundOutlined() {
   )
 }
 
+/** 帐篷 / 营地图标：用于「成长营地」入口与底部导航 */
+export function CampIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M3 20h18" />
+      <path d="M12 4 3 20h18L12 4z" />
+      <path d="M12 4v16" />
+      <path d="M9 20v-6a3 3 0 0 1 6 0v6" />
+    </Svg>
+  )
+}
+
+/** 锁图标：用于未解锁内容遮罩 */
+export function LockIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <rect x="4.5" y="11" width="15" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      <circle cx="12" cy="15.5" r="1.4" />
+    </Svg>
+  )
+}
+
 export function micOutlined() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

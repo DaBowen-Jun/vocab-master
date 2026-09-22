@@ -1,11 +1,12 @@
 import { STAGE_META, type Stage, type Word } from '../lib/types'
-import { HomeIcon, HeadphonesIcon, PenIcon, BookIcon, ChartIcon, PlanetMark } from './icons'
+import { HomeIcon, HeadphonesIcon, PenIcon, BookIcon, ChartIcon, CampIcon, PlanetMark } from './icons'
 
 const NAV_ITEMS: { key: string; label: string; icon: (p: { className?: string }) => JSX.Element }[] = [
   { key: 'home', label: '首页', icon: HomeIcon },
   { key: 'learn', label: '学习', icon: HeadphonesIcon },
   { key: 'exam', label: '考试', icon: PenIcon },
   { key: 'book', label: '词卡', icon: BookIcon },
+  { key: 'camp', label: '营地', icon: CampIcon },
   { key: 'stats', label: '统计', icon: ChartIcon },
 ]
 

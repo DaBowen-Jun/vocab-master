@@ -1,8 +1,25 @@
 import type { Mastery, Milestone, UserProgress, Word } from './types'
 import type { StageFilter } from './stageContext'
-import { STAGE_ORDER } from './types'
+import { STAGE_META, STAGE_ORDER, type Stage } from './types'
 import { MILESTONES, TITLES } from '../data/milestones'
 import { WORDS, recitationWordsByStage } from '../data/words'
+
+// 各学段单词列表（静态，提前算好避免每次渲染重复过滤）
+const STAGE_WORDS: Record<Stage, Word[]> = {
+  primary: WORDS.filter((w) => w.stage === 'primary'),
+  junior: WORDS.filter((w) => w.stage === 'junior'),
+  senior: WORDS.filter((w) => w.stage === 'senior'),
+}
+
+// 成长营地解锁阈值 = 课标目标(STAGE_META.target) 与「本学段词数 * 0.7」的较小值，
+// 既呼应课标词汇量要求，又保证在 App 实际词库内可达成。
+function campGoal(stage: Stage): number {
+  return Math.min(STAGE_META[stage].target, Math.round(STAGE_WORDS[stage].length * 0.7))
+}
+
+function learnedCount(stage: Stage): number {
+  return STAGE_WORDS[stage].filter((w) => !!state.mastery[w.id]).length
+}
 
 const STORAGE_KEY = 'vocab-master-progress-v1'
 
@@ -178,6 +195,23 @@ export const store = {
   unitOrder(stage: StageFilter = 'all'): Word[] {
     if (stage === 'all') return STAGE_ORDER.flatMap((s) => recitationWordsByStage(s))
     return recitationWordsByStage(stage)
+  },
+
+  /** 成长营地解锁状态：该学段「已练习（有熟练度记录）词数」达到阈值即点亮 */
+  campState(stage: Stage): { learned: number; goal: number; ratio: number; unlocked: boolean } {
+    const learned = learnedCount(stage)
+    const goal = campGoal(stage)
+    const ratio = goal > 0 ? Math.min(1, learned / goal) : 0
+    return { learned, goal, ratio, unlocked: learned >= goal }
+  },
+
+  /** 当前已解锁的最高学段营地（用于首页背景），无则 null */
+  highestUnlockedStage(): Stage | null {
+    for (let i = STAGE_ORDER.length - 1; i >= 0; i--) {
+      const s = STAGE_ORDER[i]
+      if (learnedCount(s) >= campGoal(s)) return s
+    }
+    return null
   },
 
   masteredCount(): number {

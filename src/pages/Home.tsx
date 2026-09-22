@@ -5,7 +5,8 @@ import { MILESTONES } from '../data/milestones'
 import { WORDS } from '../data/words'
 import { useStage } from '../lib/stageContext'
 import { STAGE_META, type Stage } from '../lib/types'
-import { HeadphonesIcon, PenIcon, BookIcon, FlameIcon, TrophyIcon, StarIcon, TargetIcon, RocketIcon } from '../components/icons'
+import { HeadphonesIcon, PenIcon, BookIcon, FlameIcon, TrophyIcon, StarIcon, TargetIcon, RocketIcon, LockIcon, CampIcon } from '../components/icons'
+import { CAMP_IMAGES } from '../assets/camp'
 import type { MilestoneIconKey } from '../data/milestones'
 
 const MILESTONE_ICONS: Record<MilestoneIconKey, (p: { className?: string }) => JSX.Element> = {
@@ -35,6 +36,8 @@ export function Home({ onNavigate }: { onNavigate: (v: string) => void }) {
   const { setStage } = useStage()
   const [toast, setToast] = useState('')
   const days = lastNDays(7)
+  const topCamp = store.highestUnlockedStage()
+  const primaryCamp = store.campState('primary')
 
   const doCheckIn = () => {
     const r = store.checkIn()
@@ -55,6 +58,39 @@ export function Home({ onNavigate }: { onNavigate: (v: string) => void }) {
           <FlameIcon className="w-4 h-4" />
           {toast}
         </div>
+      )}
+
+      {/* 成长营地：最高解锁场景作为首页横幅（未解锁时给出进度引导） */}
+      {topCamp ? (
+        <button
+          onClick={() => onNavigate('camp')}
+          className="relative w-full rounded-2xl overflow-hidden aspect-[3/1] sm:aspect-[4/1] text-left block active:scale-[0.99] transition"
+        >
+          <img src={CAMP_IMAGES[topCamp]} alt="成长营地" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-4 text-white">
+            <div className="flex items-center gap-1 text-xs font-semibold opacity-90">
+              <CampIcon className="w-4 h-4" /> 成长营地 · 已点亮
+            </div>
+            <div className="text-base font-extrabold drop-shadow">{STAGE_META[topCamp].full} 场景已开启</div>
+            <div className="text-xs opacity-85 mt-0.5 drop-shadow">和原创小伙伴一起，继续闯关 →</div>
+          </div>
+        </button>
+      ) : (
+        <button
+          onClick={() => onNavigate('camp')}
+          className="card p-4 flex items-center gap-3 w-full text-left hover:border-brand-100 transition active:scale-[0.99]"
+        >
+          <span className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+            <LockIcon className="w-6 h-6 text-slate-400" />
+          </span>
+          <div className="min-w-0">
+            <div className="font-bold text-slate-700">点亮你的第一片成长营地</div>
+            <div className="text-xs text-slate-400">
+              再练 {Math.max(0, primaryCamp.goal - primaryCamp.learned)} 个小学单词，篝火夜话就为你亮起
+            </div>
+          </div>
+        </button>
       )}
 
       {/* 个人信息条 */}

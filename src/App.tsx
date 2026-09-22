@@ -7,6 +7,7 @@ import { Exam } from './pages/Exam'
 import { WordBook } from './pages/WordBook'
 import { Stats } from './pages/Stats'
 import { FeatureMap } from './pages/FeatureMap'
+import { Camp } from './pages/Camp'
 
 export default function App() {
   const [view, setView] = useState('home')
@@ -20,6 +21,7 @@ export default function App() {
           {view === 'exam' && <Exam />}
           {view === 'book' && <WordBook />}
           {view === 'stats' && <Stats />}
+          {view === 'camp' && <Camp />}
           {view === 'map' && <FeatureMap />}
         </main>
         <footer className="mx-auto max-w-3xl w-full px-4 py-6 pb-24 text-center text-xs text-slate-400">
