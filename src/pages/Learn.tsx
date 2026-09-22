@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { store } from '../lib/store'
 import { useProgress } from '../lib/useProgress'
 import { recognitionSupported, recognize, speak, ttsSupported } from '../lib/speech'
@@ -25,8 +25,11 @@ export function Learn() {
 
   // 跟读
   const [recording, setRecording] = useState(false)
+  const [stopRec, setStopRec] = useState<(() => void) | null>(null)
   const [heard, setHeard] = useState('')
   const [score, setScore] = useState<number | null>(null)
+  const stopRecRef = useRef<(() => void) | null>(null) // 当前识别会话的停止句柄
+  const curWordId = useRef<string>('') // 当前展示单词 id，用于丢弃「已切词」的旧评分
 
   // 拼写
   const [input, setInput] = useState('')
@@ -35,6 +38,7 @@ export function Learn() {
   const [autoSpeak, setAutoSpeak] = useState(true)
 
   const word = list[idx]
+  curWordId.current = word?.id ?? ''
   const p = useProgress()
 
   useEffect(() => {
@@ -47,6 +51,11 @@ export function Learn() {
     setHeard('')
     setScore(null)
     setInput('')
+    // 切换单词时若仍在聆听，先停掉旧识别，避免结果记到旧词上
+    stopRecRef.current?.()
+    stopRecRef.current = null
+    setStopRec(null)
+    setRecording(false)
   }, [idx, stage])
 
   const elapsed = () => Date.now() - startedAt
@@ -71,25 +80,45 @@ export function Learn() {
 
   const startFollow = async () => {
     if (!recognitionSupported()) {
-      setFeedback({ ok: false, text: '当前浏览器不支持语音识别，请用 Chrome / Edge 体验跟读评分。' })
+      setFeedback({
+        ok: false,
+        text: '当前浏览器不支持语音识别。请用电脑版 Chrome / Edge 体验跟读；手机/微信内置浏览器暂不支持，可改用「拼写」模式练习。',
+      })
       return
     }
+    const myId = word.id
     setRecording(true)
     setHeard('')
     setScore(null)
+    setStopRec(null)
     try {
-      const r = await recognize(word.term, setHeard)
-      setScore(r.score)
-      const ok = r.score >= 70
-      store.recordResult(word.id, ok, elapsed(), 5)
-      setFeedback({
-        ok,
-        text: ok ? `太棒了！相似度 ${r.score}%` : `再练练～相似度 ${r.score}%，你说的是「${r.transcript}」`,
+      const r = await recognize(word.term, setHeard, (stop) => {
+        stopRecRef.current = stop
+        setStopRec(() => stop)
       })
+      // 期间若已切换到别的单词，丢弃这次评分，避免记到旧词上
+      if (myId !== curWordId.current) {
+        setRecording(false)
+        setStopRec(null)
+        return
+      }
+      if (r.noSpeech) {
+        setFeedback({ ok: false, text: '没听清，靠近麦克风、音量调大再试一次～' })
+      } else {
+        setScore(r.score)
+        const ok = r.score >= 70
+        store.recordResult(word.id, ok, elapsed(), 5)
+        setFeedback({
+          ok,
+          text: ok ? `太棒了！相似度 ${r.score}%` : `再练练～相似度 ${r.score}%，你说的是「${r.transcript}」`,
+        })
+      }
     } catch (e: any) {
       setFeedback({ ok: false, text: e.message || '识别失败' })
     } finally {
       setRecording(false)
+      setStopRec(null)
+      stopRecRef.current = null
     }
   }
 
@@ -156,12 +185,18 @@ export function Learn() {
               {word.meaning}
             </div>
             <div className="flex justify-center gap-3">
-              <button className="btn-ghost" onClick={() => speak(word.term)} disabled={!ttsSupported()}>
+              <button className="btn-ghost" onClick={() => speak(word.term)} disabled={!ttsSupported() || recording}>
                 {soundOutlined()} 播放发音
               </button>
-              <button className="btn-primary" onClick={startFollow} disabled={recording}>
-                {micOutlined()} {recording ? '聆听中…' : '开始跟读'}
-              </button>
+              {recording ? (
+                <button className="btn-primary" onClick={() => stopRec?.()}>
+                  {micOutlined()} 停止聆听
+                </button>
+              ) : (
+                <button className="btn-primary" onClick={startFollow}>
+                  {micOutlined()} 开始跟读
+                </button>
+              )}
             </div>
             {heard && <div className="mt-4 text-sm text-slate-500">识别到：<b>{heard}</b></div>}
             {score !== null && (

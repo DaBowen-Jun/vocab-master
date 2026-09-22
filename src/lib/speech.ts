@@ -94,43 +94,100 @@ export function recognitionSupported(): boolean {
 export interface RecogResult {
   transcript: string
   score: number // 0-100 与目标词的相似度
+  noSpeech?: boolean // 没听到声音（静音超时）
 }
 
 /**
  * 录音跟读并评分。
  * @param target 目标英文词（用于相似度对比）
  * @param onPartial 实时返回识别文本
+ * @param onReady 识别开始后回调，传入 stop() 以便手动停止
  */
 export function recognize(
   target: string,
   onPartial?: (text: string) => void,
+  onReady?: (stop: () => void) => void,
 ): Promise<RecogResult> {
   return new Promise((resolve, reject) => {
     const Ctor = getRecognition()
     if (!Ctor) {
-      reject(new Error('当前浏览器不支持语音识别（建议用 Chrome / Edge）'))
+      reject(new Error('当前浏览器不支持语音识别（建议用电脑版 Chrome / Edge）'))
       return
     }
     const rec = new Ctor()
     rec.lang = 'en-US'
     rec.interimResults = true
-    rec.maxAlternatives = 1
+    rec.maxAlternatives = 5 // 多候选里挑最像目标词的，显著缓解评分过严
     let finalText = ''
+    let settled = false
+    const tgt = target.toLowerCase()
+
+    const finish = (r: RecogResult) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(r)
+    }
+    const fail = (err: Error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      reject(err)
+    }
+
+    // 安全网：最长聆听 10s 自动结束，避免一直「聆听中…」
+    const timer = setTimeout(() => {
+      try {
+        rec.stop()
+      } catch {
+        /* noop */
+      }
+    }, 10000)
+
     rec.onresult = (e: any) => {
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) finalText += t
-        else interim += t
+        const res = e.results[i]
+        if (res.isFinal) {
+          // 在所有候选里挑与目标词最相似的，作为本段最终结果
+          let best = res[0].transcript
+          let bestSim = similarity(tgt, res[0].transcript.toLowerCase())
+          for (let k = 1; k < res.length; k++) {
+            const s = similarity(tgt, res[k].transcript.toLowerCase())
+            if (s > bestSim) {
+              bestSim = s
+              best = res[k].transcript
+            }
+          }
+          finalText = (finalText ? finalText + ' ' : '') + best
+        } else {
+          interim += res[0].transcript
+        }
       }
       onPartial?.(finalText || interim)
     }
-    rec.onerror = (e: any) => reject(new Error(e.error || '识别失败'))
+    rec.onerror = (e: any) => {
+      const name = e?.error || 'error'
+      if (name === 'no-speech') {
+        finish({ transcript: '', score: 0, noSpeech: true })
+      } else if (name === 'aborted') {
+        // 手动停止：以已识别内容结算
+        finish({ transcript: finalText.trim(), score: similarity(tgt, finalText.trim().toLowerCase()) })
+      } else {
+        fail(new Error(`识别失败：${name}`))
+      }
+    }
     rec.onend = () => {
-      const transcript = finalText.trim()
-      resolve({ transcript, score: similarity(target.toLowerCase(), transcript.toLowerCase()) })
+      finish({ transcript: finalText.trim(), score: similarity(tgt, finalText.trim().toLowerCase()) })
     }
     rec.start()
+    onReady?.(() => {
+      try {
+        rec.stop()
+      } catch {
+        /* noop */
+      }
+    })
   })
 }
 
