@@ -91,6 +91,17 @@ export function recognitionSupported(): boolean {
   return getRecognition() !== null
 }
 
+/** 麦克风权限状态预检（用于提前给出可操作的提示）。浏览器不支持时返回 'unsupported'。 */
+export async function micPermission(): Promise<'granted' | 'denied' | 'prompt' | 'unsupported'> {
+  if (typeof navigator === 'undefined' || !(navigator as any).permissions?.query) return 'unsupported'
+  try {
+    const st = await (navigator as any).permissions.query({ name: 'microphone' as any })
+    return (st?.state as 'granted' | 'denied' | 'prompt') || 'prompt'
+  } catch {
+    return 'unsupported'
+  }
+}
+
 export interface RecogResult {
   transcript: string
   score: number // 0-100 与目标词的相似度
@@ -173,6 +184,9 @@ export function recognize(
       } else if (name === 'aborted') {
         // 手动停止：以已识别内容结算
         finish({ transcript: finalText.trim(), score: similarity(tgt, finalText.trim().toLowerCase()) })
+      } else if (name === 'not-allowed' || name === 'service-not-allowed') {
+        // 麦克风权限被拒 / 环境不允许：直接抛原始错误名，交由 UI 给出可操作提示
+        fail(new Error(name))
       } else {
         fail(new Error(`识别失败：${name}`))
       }
@@ -180,7 +194,15 @@ export function recognize(
     rec.onend = () => {
       finish({ transcript: finalText.trim(), score: similarity(tgt, finalText.trim().toLowerCase()) })
     }
-    rec.start()
+    // 关键：rec.start() 在麦克风被拒/环境不允许时会「同步抛错」，
+    // 必须 try/catch 否则 promise 永远 pending、按钮卡在「聆听中…」
+    try {
+      rec.start()
+    } catch (err: any) {
+      const nm = err?.name === 'NotAllowedError' ? 'not-allowed' : err?.error || err?.name || 'start-failed'
+      fail(new Error(nm))
+      return
+    }
     onReady?.(() => {
       try {
         rec.stop()

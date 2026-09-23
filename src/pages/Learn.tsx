@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { store } from '../lib/store'
 import { useProgress } from '../lib/useProgress'
-import { recognitionSupported, recognize, speak, ttsSupported } from '../lib/speech'
+import { recognitionSupported, recognize, speak, ttsSupported, micPermission } from '../lib/speech'
 import { StageSwitch, StageTag as StageTagInline } from '../components/common'
 import { micOutlined, soundOutlined, HeadphonesIcon, PenIcon } from '../components/icons'
 import { useStage } from '../lib/stageContext'
@@ -30,6 +30,7 @@ export function Learn() {
   const [score, setScore] = useState<number | null>(null)
   const stopRecRef = useRef<(() => void) | null>(null) // 当前识别会话的停止句柄
   const curWordId = useRef<string>('') // 当前展示单词 id，用于丢弃「已切词」的旧评分
+  const [envNote, setEnvNote] = useState<string | null>(null) // 跟读环境提示（不支持/权限被拒）
 
   // 拼写
   const [input, setInput] = useState('')
@@ -57,6 +58,30 @@ export function Learn() {
     setStopRec(null)
     setRecording(false)
   }, [idx, stage])
+
+  // 进入跟读模式时预检环境，提前提示「不支持 / 麦克风被拒」，避免用户点了才发现用不了
+  useEffect(() => {
+    let cancelled = false
+    if (mode !== 'follow') {
+      setEnvNote(null)
+      return
+    }
+    if (!recognitionSupported()) {
+      setEnvNote('当前浏览器不支持语音识别，请在电脑版 Chrome / Edge 中打开本页；或改用「拼写」模式练习。')
+      return
+    }
+    micPermission().then((st) => {
+      if (cancelled) return
+      if (st === 'denied') {
+        setEnvNote('麦克风权限被拒绝。点地址栏左侧的锁 / 调音台图标，把「麦克风」设为「允许」，刷新页面再试。')
+      } else {
+        setEnvNote(null)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mode, stage])
 
   const elapsed = () => Date.now() - startedAt
 
@@ -114,12 +139,32 @@ export function Learn() {
         })
       }
     } catch (e: any) {
-      setFeedback({ ok: false, text: e.message || '识别失败' })
+      const msg = (e?.message || '') as string
+      if (msg.includes('not-allowed')) {
+        setFeedback({
+          ok: false,
+          text: '麦克风权限被拒绝。点地址栏左侧的锁 / 调音台图标，把「麦克风」设为「允许」，刷新页面再试。',
+        })
+      } else if (msg.includes('service-not-allowed')) {
+        setFeedback({
+          ok: false,
+          text: '当前浏览器 / 环境不允许语音识别（常见于手机微信等内置浏览器）。请用电脑版 Chrome / Edge，或改用「拼写」模式。',
+        })
+      } else {
+        setFeedback({ ok: false, text: e.message || '识别失败' })
+      }
     } finally {
       setRecording(false)
       setStopRec(null)
       stopRecRef.current = null
     }
+  }
+
+  // 无麦克风 / 不支持识别时的兜底：自评「已读对」，记录练习进度但不计分
+  const markSelf = () => {
+    store.recordResult(word.id, true, elapsed(), 0)
+    setScore(100)
+    setFeedback({ ok: true, text: '已标记为「我已读对」（自评，不计分）。需要真人纠音请用电脑版 Chrome / Edge 的「开始跟读」。' })
   }
 
   const submitSpell = () => {
@@ -184,6 +229,11 @@ export function Learn() {
               {word.phonetic ? `${word.phonetic} · ` : ''}
               {word.meaning}
             </div>
+            {envNote && (
+              <div className="text-left text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed mb-3">
+                {envNote}
+              </div>
+            )}
             <div className="flex justify-center gap-3">
               <button className="btn-ghost" onClick={() => speak(word.term)} disabled={!ttsSupported() || recording}>
                 {soundOutlined()} 播放发音
@@ -198,6 +248,13 @@ export function Learn() {
                 </button>
               )}
             </div>
+            <button
+              className="btn-ghost w-full mt-2 !text-xs !py-2"
+              onClick={markSelf}
+              disabled={recording}
+            >
+              麦克风用不了？点此「我已读对」继续（自评，不计分）
+            </button>
             {heard && <div className="mt-4 text-sm text-slate-500">识别到：<b>{heard}</b></div>}
             {score !== null && (
               <div className="mt-2 text-lg font-black" style={{ color: score >= 70 ? '#22c55e' : '#ef4444' }}>
